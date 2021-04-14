@@ -176,6 +176,14 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		msg.Name = &msgName
 	}
 
+	for _, m := range p.Messages {
+		log.Printf("Message name: %v\n", *m.Name)
+		log.Printf("Message string: %v\n", m.String())
+		for _, ee := range m.Extension {
+			log.Printf("Extension name: %v\n", *ee.Name)
+			log.Printf("Extension default value: %v\n", *ee.DefaultValue)
+		}
+	}
 	for _, ss := range p.Service {
 		log.Printf("Service Name: %v\n", *ss.Name)
 		for _, mm := range ss.Method {
