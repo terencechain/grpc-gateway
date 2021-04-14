@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"text/template"
 
@@ -175,6 +176,15 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		msg.Name = &msgName
 	}
 
+	for _, ss := range p.Service {
+		log.Printf("Service Name: %v\n", ss.Name)
+		for _, mm := range ss.Method {
+			log.Printf("\tService Method Name: %v\n", *mm.Name)
+			log.Printf("\tService InputType: %v\n", *mm.InputType)
+			log.Printf("\tService OutputType: %v\n", *mm.OutputType)
+		}
+	}
+
 	for _, svc := range p.Services {
 		var methodWithBindingsSeen bool
 		svcName := casing.Camel(*svc.Name)
@@ -185,6 +195,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			methName := casing.Camel(*meth.Name)
 			meth.Name = &methName
 			for _, b := range meth.Bindings {
+
 				methodWithBindingsSeen = true
 				if err := handlerTemplate.Execute(w, binding{
 					Binding:           b,
