@@ -177,7 +177,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	}
 
 	for _, ss := range p.Service {
-		log.Printf("Service Name: %v\n", ss.Name)
+		log.Printf("Service Name: %v\n", *ss.Name)
 		for _, mm := range ss.Method {
 			log.Printf("\tService Method Name: %v\n", *mm.Name)
 			log.Printf("\tService InputType: %v\n", *mm.InputType)
