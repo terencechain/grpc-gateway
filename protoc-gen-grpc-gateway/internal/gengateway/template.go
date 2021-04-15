@@ -194,15 +194,12 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	for _, pp := range p.Extension {
 		if *pp.Name == "decode_type" {
 			decodeTypeId = *pp.Number
+			log.Printf("decode_type: %d\n", decodeTypeId)
 		}
 	}
 
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
-		for _, ee := range m.Extension {
-			log.Printf("Extension name: %v\n", *ee.Name)
-			log.Printf("Extension default value: %v\n", *ee.DefaultValue)
-		}
 		for _, ff := range m.Fields {
 			log.Printf("Field name: %v\n", *ff.Name)
 			log.Printf("Field extensions: %v\n", ff.Options.String())
@@ -213,7 +210,6 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			if value != "" {
 				log.Printf("Field Decode_Type Value: %s\n", value)
 			}
-			// Regex for it since names aren't easily visible.
 		}
 	}
 	for _, ss := range p.Service {
