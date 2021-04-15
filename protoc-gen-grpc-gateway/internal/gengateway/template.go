@@ -172,6 +172,7 @@ func getExtensionValueById(f *descriptor.Field, extensionId int32) (string, erro
 		return "", err
 	}
 	matches := regex.FindStringSubmatch(options.String())
+	log.Println(matches)
 	if len(matches) != 2 {
 		return "", nil
 	}
@@ -201,14 +202,14 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
 		for _, ff := range m.Fields {
-			log.Printf("Field name: %v\n", *ff.Name)
-			log.Printf("Field extensions: %v\n", ff.Options.String())
+			log.Printf("\tField name: %v\n", *ff.Name)
+			log.Printf("\tField extensions: %v\n", ff.Options.String())
 			value, err := getExtensionValueById(ff, decodeTypeId)
 			if err != nil {
 				return "", err
 			}
 			if value != "" {
-				log.Printf("Field Decode_Type Value: %s\n", value)
+				log.Printf("\tField Decode_Type Value: %s\n", value)
 			}
 		}
 	}
