@@ -191,8 +191,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	}
 
 
-	messageToDecodeType := make(map[string]string)
-	serviceFieldToDecodeType := make(map[string]map[string]string)
+	//messageToDecodeType := make(map[string]string)
+	//serviceFieldToDecodeType := make(map[string]map[string]string)
 	var decodeTypeId int32 = 50004
 	//for _, pp := range p.Extension {
 	//	log.Println(*pp.Name)
