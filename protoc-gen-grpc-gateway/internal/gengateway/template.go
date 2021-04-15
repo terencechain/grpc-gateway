@@ -172,11 +172,10 @@ func getExtensionValueById(f *descriptor.Field, extensionId int32) (string, erro
 		return "", err
 	}
 	matches := regex.FindStringSubmatch(options.String())
-	log.Println(matches)
 	if len(matches) != 2 {
 		return "", nil
 	}
-	return matches[0], nil
+	return matches[1], nil
 }
 
 func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
@@ -215,9 +214,9 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		}
 	}
 	for _, ss := range p.Service {
-		log.Printf("Service Name: %v\n", *ss.Name)
 		for _, mm := range ss.Method {
-			log.Printf("\tService Method Name: %v\n", *mm.Name)
+			key := fmt.Sprintf("_%s_%s_", *ss.Name, *mm.Name)
+			log.Printf("Service Method Name: %v\n", key)
 			log.Printf("\tService InputType: %v\n", *mm.InputType)
 			log.Printf("\tService OutputType: %v\n", *mm.OutputType)
 		}
