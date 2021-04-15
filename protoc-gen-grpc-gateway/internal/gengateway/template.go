@@ -190,6 +190,9 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		msg.Name = &msgName
 	}
 
+
+	messageToDecodeType := make(map[string]string)
+	serviceFieldToDecodeType := make(map[string]map[string]string)
 	var decodeTypeId int32 = 50004
 	//for _, pp := range p.Extension {
 	//	log.Println(*pp.Name)
@@ -201,6 +204,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
+		log.Printf("Message go type: %v\n", m.GoType(*p.Package))
+
 		for _, ff := range m.Fields {
 			log.Printf("\tField name: %v\n", *ff.Name)
 			//log.Printf("\tField extensions: %v\n", ff.Options.String())
@@ -210,6 +215,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			}
 			if value != "" {
 				log.Printf("\tField Decode_Type Value: %s\n", value)
+
 			}
 		}
 	}
