@@ -202,10 +202,6 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	//	}
 	//}
 
-	log.Println(p.GoPkg.Name)
-	log.Println(p.GoPkg.Path)
-	log.Println(p.GoPkg.Alias)
-
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
 		log.Printf("Message go type: %v\n", m.GoType(*p.Package))
@@ -227,8 +223,16 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		for _, mm := range ss.Method {
 			key := fmt.Sprintf("_%s_%s_", *ss.Name, *mm.Name)
 			log.Printf("Service Method Name: %v\n", key)
-			log.Printf("\tService InputType: %v\n", *mm.InputType)
-			log.Printf("\tService OutputType: %v\n", *mm.OutputType)
+			serviceInputType, err := regexp.MatchString( "(?!/)[^/]*/[^/]*$", *mm.InputType)
+			if err != nil {
+				return "", err
+			}
+			serviceOutputType, err := regexp.MatchString( "(?!/)[^/]*/[^/]*$", *mm.OutputType)
+			if err != nil {
+				return "", err
+			}
+			log.Printf("\tService InputType: %v\n", serviceInputType)
+			log.Printf("\tService OutputType: %v\n", serviceOutputType)
 		}
 	}
 
