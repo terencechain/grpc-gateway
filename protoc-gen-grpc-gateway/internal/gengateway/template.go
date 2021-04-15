@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -164,6 +165,19 @@ func typeFromName(name string) string {
 	return ""
 }
 
+func getExtensionValueById(f *descriptor.Field, extensionId int32) (string, error) {
+	options := f.Options
+	regex, err := regexp.Compile(fmt.Sprintf("%d:\"([^\"]*)\"", extensionId))
+	if err != nil {
+		return "", err
+	}
+	matches := regex.FindStringSubmatch(options.String())
+	if len(matches) != 2 {
+		return "", nil
+	}
+	return matches[0], nil
+}
+
 func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	w := bytes.NewBuffer(nil)
 	if err := headerTemplate.Execute(w, p); err != nil {
@@ -176,12 +190,30 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		msg.Name = &msgName
 	}
 
+	var decodeTypeId int32
+	for _, pp := range p.Extension {
+		if *pp.Name == "decode_type" {
+			decodeTypeId = *pp.Number
+		}
+	}
+
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
-		log.Printf("Message string: %v\n", m.String())
 		for _, ee := range m.Extension {
 			log.Printf("Extension name: %v\n", *ee.Name)
 			log.Printf("Extension default value: %v\n", *ee.DefaultValue)
+		}
+		for _, ff := range m.Fields {
+			log.Printf("Field name: %v\n", *ff.Name)
+			log.Printf("Field extensions: %v\n", ff.Options.String())
+			value, err := getExtensionValueById(ff, decodeTypeId)
+			if err != nil {
+				return "", err
+			}
+			if value != "" {
+				log.Printf("Field Decode_Type Value: %s\n", value)
+			}
+			// Regex for it since names aren't easily visible.
 		}
 	}
 	for _, ss := range p.Service {
