@@ -202,6 +202,10 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	//	}
 	//}
 
+	log.Println(p.GoPkg.Name)
+	log.Println(p.GoPkg.Path)
+	log.Println(p.GoPkg.Alias)
+
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
 		log.Printf("Message go type: %v\n", m.GoType(*p.Package))
