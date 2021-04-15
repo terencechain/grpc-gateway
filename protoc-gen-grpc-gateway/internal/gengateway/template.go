@@ -193,6 +193,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 
 	var decodeTypeId int32
 	for _, pp := range p.Extension {
+		log.Println(*pp.Name)
 		if *pp.Name == "decode_type" {
 			decodeTypeId = *pp.Number
 			log.Printf("decode_type: %d\n", decodeTypeId)
@@ -204,12 +205,14 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		for _, ff := range m.Fields {
 			log.Printf("\tField name: %v\n", *ff.Name)
 			log.Printf("\tField extensions: %v\n", ff.Options.String())
-			value, err := getExtensionValueById(ff, decodeTypeId)
-			if err != nil {
-				return "", err
-			}
-			if value != "" {
-				log.Printf("\tField Decode_Type Value: %s\n", value)
+			if decodeTypeId != 0 {
+				value, err := getExtensionValueById(ff, decodeTypeId)
+				if err != nil {
+					return "", err
+				}
+				if value != "" {
+					log.Printf("\tField Decode_Type Value: %s\n", value)
+				}
 			}
 		}
 	}
