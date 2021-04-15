@@ -178,6 +178,15 @@ func getExtensionValueById(f *descriptor.Field, extensionId int32) (string, erro
 	return matches[1], nil
 }
 
+func getPkgNameFromTypeString(typeString string) string {
+	lastIdx := strings.LastIndex(typeString, ".")
+	if lastIdx < 1 {
+		return typeString
+	}
+	secondLastIdx := strings.LastIndex(typeString[:lastIdx], ".")
+	return typeString[secondLastIdx:]
+}
+
 func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	w := bytes.NewBuffer(nil)
 	if err := headerTemplate.Execute(w, p); err != nil {
@@ -223,14 +232,9 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		for _, mm := range ss.Method {
 			key := fmt.Sprintf("_%s_%s_", *ss.Name, *mm.Name)
 			log.Printf("Service Method Name: %v\n", key)
-			serviceInputType, err := regexp.MatchString( "(?!/)[^/]*/[^/]*$", *mm.InputType)
-			if err != nil {
-				return "", err
-			}
-			serviceOutputType, err := regexp.MatchString( "(?!/)[^/]*/[^/]*$", *mm.OutputType)
-			if err != nil {
-				return "", err
-			}
+
+			serviceInputType := getPkgNameFromTypeString(*mm.InputType)
+			serviceOutputType := getPkgNameFromTypeString(*mm.OutputType)
 			log.Printf("\tService InputType: %v\n", serviceInputType)
 			log.Printf("\tService OutputType: %v\n", serviceOutputType)
 		}
