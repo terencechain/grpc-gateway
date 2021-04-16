@@ -237,6 +237,9 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			serviceOutputType := getPkgNameFromTypeString(*mm.OutputType)
 			log.Printf("\tService InputType: %v\n", serviceInputType)
 			log.Printf("\tService OutputType: %v\n", serviceOutputType)
+			if len(serviceFieldToDecodeType[requestKey]) == 0 {
+				serviceFieldToDecodeType[requestKey] = make(map[string]string)
+			}
 			for k, v := range messageToDecodeType[serviceInputType] {
 				serviceFieldToDecodeType[requestKey][k] = v
 			}
