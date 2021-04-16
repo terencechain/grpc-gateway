@@ -29,6 +29,7 @@ type binding struct {
 	Registry          *descriptor.Registry
 	AllowPatchFeature bool
 	TypeFromName func(string) string
+	DecodeFromHex func(string, string) bool
 }
 
 // GetBodyFieldPath returns the binding body's fieldpath.
@@ -201,25 +202,19 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 
 
 	messageToDecodeType := make(map[string]map[string]string)
-	//serviceFieldToDecodeType := make(map[string]map[string]string)
+	serviceFieldToDecodeType := make(map[string]map[string]string)
 	var decodeTypeId int32 = 50004
-	//for _, pp := range p.Extension {
-	//	log.Println(*pp.Name)
-	//	if *pp.Name == "decode_type" {
-	//		decodeTypeId = *pp.Number
-	//		log.Printf("decode_type: %d\n", decodeTypeId)
-	//	}
-	//}
+
+	decodeField := func(functionName string, fieldName string) bool {
+		return serviceFieldToDecodeType[functionName][fieldName] == "hex"
+	}
 
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
-		log.Printf("Message go type: %v\n", )
 
 		for _, ff := range m.Fields {
 			log.Printf("\tField name: %v\n", *ff.Name)
-			log.Printf("\tField json name: %v\n", *ff.JsonName)
-			log.Printf("\tField type name: %v\n", *ff.TypeName)
-			//log.Printf("\tField extensions: %v\n", ff.Options.String())
+
 			value, err := getExtensionValueById(ff, decodeTypeId)
 			if err != nil {
 				return "", err
@@ -232,13 +227,16 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	}
 	for _, ss := range p.Service {
 		for _, mm := range ss.Method {
-			key := fmt.Sprintf("_%s_%s_", *ss.Name, *mm.Name)
-			log.Printf("Service Method Name: %v\n", key)
+			requestKey := fmt.Sprintf("%s_%s", *ss.Name, *mm.Name)
+			log.Printf("Service Method Name: %v\n", requestKey)
 
 			serviceInputType := getPkgNameFromTypeString(*mm.InputType)
 			serviceOutputType := getPkgNameFromTypeString(*mm.OutputType)
 			log.Printf("\tService InputType: %v\n", serviceInputType)
 			log.Printf("\tService OutputType: %v\n", serviceOutputType)
+			for k, v := range messageToDecodeType[serviceInputType] {
+				serviceFieldToDecodeType[requestKey][k] = v
+			}
 		}
 	}
 
@@ -259,6 +257,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					Registry:          reg,
 					AllowPatchFeature: p.AllowPatchFeature,
 					TypeFromName: typeFromName,
+					DecodeFromHex: decodeField,
 				}); err != nil {
 					return "", err
 				}
@@ -396,6 +395,8 @@ func request_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}}(ctx cont
 	_ = template.Must(handlerTemplate.New("client-rpc-request-func").Parse(`
 {{$AllowPatchFeature := .AllowPatchFeature}}
 {{$TypeFromName := .TypeFromName}}
+{{$DecodeFromHex := .DecodeFromHex}}
+{{$MethodName := (printf "%s_%s" .Method.Service.GetName .Method.GetName)}}
 {{if .HasQueryParam}}
 var (
 	filter_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}} = {{.QueryParamFilter}}
@@ -438,6 +439,7 @@ var (
 	{{$binding := .}}
 	{{range $param := .PathParams}}
 	{{$enum := $binding.LookupEnum $param}}
+	{{$fieldName := $param | printf "%q"}}
 	val, ok = pathParams[{{$param | printf "%q"}}]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", {{$param | printf "%q"}})
@@ -458,7 +460,13 @@ var (
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", {{$param | printf "%q"}}, err)
 	}
-{{else}}
+{{else if $enum}}
+	{{$param}}, err := {{$param.ConvertFuncExpr}}(val{{if $param.IsRepeated}}, {{$binding.Registry.GetRepeatedPathParamSeparator | printf "%c" | printf "%q"}}{{end}})
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", {{$param | printf "%q"}}, err)
+	}
+	{{$param.AssignableExpr "protoReq"}} = {{$param | printf "%q" | call $TypeFromName}}({{$param}})
+{{else if call $DecodeFromHex $MethodName $fieldName}}
 	{{$param}}, err := {{$param.ConvertFuncExpr}}(val{{if $param.IsRepeated}}, {{$binding.Registry.GetRepeatedPathParamSeparator | printf "%c" | printf "%q"}}{{end}})
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", {{$param | printf "%q"}}, err)
