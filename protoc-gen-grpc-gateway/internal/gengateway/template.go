@@ -184,7 +184,7 @@ func getPkgNameFromTypeString(typeString string) string {
 		return typeString
 	}
 	secondLastIdx := strings.LastIndex(typeString[:lastIdx], ".")
-	return typeString[secondLastIdx:]
+	return typeString[secondLastIdx+1:]
 }
 
 func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
@@ -200,7 +200,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	}
 
 
-	//messageToDecodeType := make(map[string]string)
+	messageToDecodeType := make(map[string]map[string]string)
 	//serviceFieldToDecodeType := make(map[string]map[string]string)
 	var decodeTypeId int32 = 50004
 	//for _, pp := range p.Extension {
@@ -213,10 +213,12 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
-		log.Printf("Message go type: %v\n", m.GoType(*p.Package))
+		log.Printf("Message go type: %v\n", )
 
 		for _, ff := range m.Fields {
 			log.Printf("\tField name: %v\n", *ff.Name)
+			log.Printf("\tField json name: %v\n", *ff.JsonName)
+			log.Printf("\tField type name: %v\n", *ff.TypeName)
 			//log.Printf("\tField extensions: %v\n", ff.Options.String())
 			value, err := getExtensionValueById(ff, decodeTypeId)
 			if err != nil {
@@ -224,7 +226,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			}
 			if value != "" {
 				log.Printf("\tField Decode_Type Value: %s\n", value)
-
+				messageToDecodeType[m.GoType(*p.Package)][*ff.Name] = value
 			}
 		}
 	}
