@@ -466,14 +466,14 @@ var (
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", {{$param | printf "%q"}}, err)
 	}
-{{else if $enum}}
+{{else if call $DecodeFromHex $MethodName $fieldName}}
+	// This is a comment to show tis is working.
 	{{$param}}, err := {{$param.ConvertFuncExpr}}(val{{if $param.IsRepeated}}, {{$binding.Registry.GetRepeatedPathParamSeparator | printf "%c" | printf "%q"}}{{end}})
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", {{$param | printf "%q"}}, err)
 	}
 	{{$param.AssignableExpr "protoReq"}} = {{$param | printf "%q" | call $TypeFromName}}({{$param}})
-{{else if call $DecodeFromHex $MethodName $fieldName}}
-	// This is a comment to show tis is working.
+{{else}}
 	{{$param}}, err := {{$param.ConvertFuncExpr}}(val{{if $param.IsRepeated}}, {{$binding.Registry.GetRepeatedPathParamSeparator | printf "%c" | printf "%q"}}{{end}})
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", {{$param | printf "%q"}}, err)
