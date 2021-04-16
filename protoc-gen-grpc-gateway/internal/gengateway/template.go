@@ -221,6 +221,9 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			}
 			if value != "" {
 				log.Printf("\tField Decode_Type Value: %s\n", value)
+				if len(messageToDecodeType[m.GoType(*p.Package)]) == 0 {
+					messageToDecodeType[m.GoType(*p.Package)] = make(map[string]string)
+				}
 				messageToDecodeType[m.GoType(*p.Package)][*ff.Name] = value
 			}
 		}
