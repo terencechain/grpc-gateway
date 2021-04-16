@@ -450,6 +450,9 @@ var (
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", {{$param | printf "%q"}})
 	}
+	// {{call $DecodeFromHex $MethodName $fieldName}}
+	// {{$MethodName}}
+	// {{$fieldName}}
 {{if $param.IsNestedProto3}}
 	err = runtime.PopulateFieldFromPath(&protoReq, {{$param | printf "%q"}}, val)
 	if err != nil {
