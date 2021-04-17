@@ -445,7 +445,7 @@ var (
 	{{$binding := .}}
 	{{range $param := .PathParams}}
 	{{$enum := $binding.LookupEnum $param}}
-	{{$fieldName := $param | printf "%q"}}
+	{{$fieldName := $param | printf "%v"}}
 	val, ok = pathParams[{{$param | printf "%q"}}]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", {{$param | printf "%q"}})
