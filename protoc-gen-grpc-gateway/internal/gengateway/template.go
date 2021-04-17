@@ -302,6 +302,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					TypeFromName: typeFromName,
 					DecodeFromHex: decodeInputField,
 					EncodeOutputField: encodeOutputMessageType,
+					JsonNameToGoName: jsonFieldNameGoName,
+					FieldsToEncode: funcFieldsEncode,
 				}); err != nil {
 					return "", err
 				}
@@ -499,7 +501,7 @@ var (
 	// {{call $EncodeOutputField $MethodName}}
 	// {{$MethodName}}
 	// {{$fieldName}}
-	// {{call $FieldsToEncode .Method.GetName}} 
+	// {{call $FieldsToEncode $MethodName}} 
 {{if $param.IsNestedProto3}}
 	err = runtime.PopulateFieldFromPath(&protoReq, {{$param | printf "%q"}}, val)
 	if err != nil {
@@ -580,7 +582,7 @@ var (
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", "hi")
 	}
-	{{range $param := call $FieldsToEncode .Method.GetName}}
+	{{range $param := call $FieldsToEncode $MethodName}}
 		castedMsg.{{call $JsonNameToGoName $param}} = ""
 	{{end}}
 	return toInterface(castedMsg).(proto.Message), metadata, err
