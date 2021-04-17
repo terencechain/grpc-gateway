@@ -30,6 +30,7 @@ type binding struct {
 	AllowPatchFeature bool
 	TypeFromName func(string) string
 	DecodeFromHex func(string, string) bool
+	EncodeOutputField func(string) string
 }
 
 // GetBodyFieldPath returns the binding body's fieldpath.
@@ -203,10 +204,15 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 
 	messageToDecodeType := make(map[string]map[string]string)
 	serviceFieldToDecodeType := make(map[string]map[string]string)
+	encodeOutputToMessageType := make(map[string]string)
+	nameToGoName := make(map[string]string)
 	var decodeTypeId int32 = 50004
 
-	decodeField := func(functionName string, fieldName string) bool {
+	decodeInputField := func(functionName string, fieldName string) bool {
 		return serviceFieldToDecodeType[functionName][fieldName] == "hex"
+	}
+	encodeOutputMessageType := func(functionName string) string {
+		return encodeOutputToMessageType[functionName]
 	}
 
 	for _, m := range p.Messages {
@@ -214,6 +220,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 
 		for _, ff := range m.Fields {
 			log.Printf("\tField name: %v\n", *ff.Name)
+			log.Printf("\tField name: %v\n", *ff.JsonName)
+
 
 			value, err := getExtensionValueById(ff, decodeTypeId)
 			if err != nil {
@@ -225,6 +233,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					messageToDecodeType[m.GoType(*p.Package)] = make(map[string]string)
 				}
 				messageToDecodeType[m.GoType(*p.Package)][*ff.Name] = value
+				nameToGoName[*ff.Name] = *ff.TypeName
 			}
 		}
 	}
@@ -237,10 +246,20 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			serviceOutputType := getPkgNameFromTypeString(*mm.OutputType)
 			log.Printf("\tService InputType: %v\n", serviceInputType)
 			log.Printf("\tService OutputType: %v\n", serviceOutputType)
+
+			outputTypeIndex := strings.LastIndex(*mm.InputType, ".")
+			outputType := (*mm.InputType)[outputTypeIndex+1:]
+			if len(messageToDecodeType[serviceOutputType]) > 0 {
+				encodeOutputToMessageType[requestKey] = outputType
+			}
+
 			if len(serviceFieldToDecodeType[requestKey]) == 0 {
 				serviceFieldToDecodeType[requestKey] = make(map[string]string)
 			}
 			for k, v := range messageToDecodeType[serviceInputType] {
+				serviceFieldToDecodeType[requestKey][k] = v
+			}
+			for k, v := range messageToDecodeType[serviceOutputType] {
 				serviceFieldToDecodeType[requestKey][k] = v
 			}
 		}
@@ -263,7 +282,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					Registry:          reg,
 					AllowPatchFeature: p.AllowPatchFeature,
 					TypeFromName: typeFromName,
-					DecodeFromHex: decodeField,
+					DecodeFromHex: decodeInputField,
+					EncodeOutputField: encodeOutputMessageType,
 				}); err != nil {
 					return "", err
 				}
@@ -274,6 +294,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					Registry:          reg,
 					AllowPatchFeature: p.AllowPatchFeature,
 					TypeFromName: typeFromName,
+					DecodeFromHex: decodeInputField,
+					EncodeOutputField: encodeOutputMessageType,
 				}); err != nil {
 					return "", err
 				}
@@ -417,6 +439,7 @@ func request_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}}(ctx cont
 {{$AllowPatchFeature := .AllowPatchFeature}}
 {{$TypeFromName := .TypeFromName}}
 {{$DecodeFromHex := .DecodeFromHex}}
+{{$EncodeOutputField := .EncodeOutputField}}
 {{$MethodName := (printf "%s_%s" .Method.Service.GetName .Method.GetName)}}
 {{if .HasQueryParam}}
 var (
@@ -466,6 +489,7 @@ var (
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", {{$param | printf "%q"}})
 	}
 	// {{call $DecodeFromHex $MethodName $fieldName}}
+	// {{call $EncodeOutputField $MethodName}}
 	// {{$MethodName}}
 	// {{$fieldName}}
 {{if $param.IsNestedProto3}}
@@ -486,17 +510,19 @@ var (
 	}
 {{else if call $DecodeFromHex $MethodName $fieldName}}
 	// Strip off quotation marks and '0x' from hex value in JSON ("0x...")
-	s := val[2:]
-	
-	hexBytes, err := hex.DecodeString(s)
-	if err != nil {
-		return nil, metadata, err
+	if len(val) > 2 { 
+		s := val[2:]
+		
+		hexBytes, err := hex.DecodeString(s)
+		if err != nil {
+			return nil, metadata, err
+		}
+		b64, err := base64.StdEncoding.DecodeString(string(hexBytes))
+		if err != nil {
+			return nil, metadata, err
+		}
+		{{$param.AssignableExpr "protoReq"}} = {{$param | printf "%q" | call $TypeFromName}}(b64)
 	}
-	b64, err := base64.StdEncoding.DecodeString(string(hexBytes))
-	if err != nil {
-		return nil, metadata, err
-	}
-	{{$param.AssignableExpr "protoReq"}} = {{$param | printf "%q" | call $TypeFromName}}(b64)
 {{else}}
 	{{$param}}, err := {{$param.ConvertFuncExpr}}(val{{if $param.IsRepeated}}, {{$binding.Registry.GetRepeatedPathParamSeparator | printf "%c" | printf "%q"}}{{end}})
 	if err != nil {
@@ -534,6 +560,19 @@ var (
 	}
 	metadata.HeaderMD = header
 	return stream, metadata, nil
+{{else if call $EncodeOutputField $MethodName | ne ""}} 
+	msg, err := client.{{.Method.GetName}}(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	castedMsg, ok := msg.(*{{call $EncodeOutputField $MethodName}})
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", "hi")
+	}
+	{{range $param := .PathParams}}
+		{{$fieldName := $param | printf "%v"}}
+		{{if call $DecodeFromHex $MethodName $fieldName}}
+			castedMsg.{{$fieldName}} = ""
+		{{end}}
+	{{end}}
+	return casted.(proto.Message), metadata, err
 {{else}}
 	msg, err := client.{{.Method.GetName}}(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
