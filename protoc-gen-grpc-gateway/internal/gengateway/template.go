@@ -257,9 +257,6 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			for k, v := range messageToDecodeType[serviceInputType] {
 				serviceFieldToDecodeType[requestKey][k] = v
 			}
-			for k, v := range messageToDecodeType[serviceOutputType] {
-				serviceFieldToDecodeType[requestKey][k] = v
-			}
 		}
 	}
 
