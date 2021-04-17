@@ -315,6 +315,8 @@ It translates gRPC into RESTful JSON APIs.
 */{{end}}
 package {{.GoPkg.Name}}
 import (
+	"encoding/base64"
+	"encoding/hex"
 	github_com_prysmaticlabs_eth2_types "github.com/prysmaticlabs/eth2-types"
 	emptypb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -331,6 +333,8 @@ var _ = metadata.Join
 var _ = github_com_prysmaticlabs_eth2_types.Epoch(0)
 var _ = emptypb.Empty{}
 var _ = empty.Empty{}
+var _ = base64.Encoding{}
+var _ = hex.ErrLength
 
 //func Base64ToHex([]byte) ([]byte, error) {
 //  s := base64.StdEncoding.EncodeToString(*h)
