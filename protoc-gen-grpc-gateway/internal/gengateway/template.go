@@ -375,11 +375,6 @@ var _ = hex.ErrLength
 //
 //  return b, nil
 //}
-
-func toInterface(obj interface{}) interface{} {
-	return obj
-}
-
 `))
 
 	handlerTemplate = template.Must(template.New("handler").Parse(`
@@ -506,6 +501,7 @@ var (
 	// {{call $EncodeOutputField $MethodName}}
 	// {{$MethodName}}
 	// {{$fieldName}}
+	// {{call $FieldsToEncode .Method.GetName}} 
 {{if $param.IsNestedProto3}}
 	err = runtime.PopulateFieldFromPath(&protoReq, {{$param | printf "%q"}}, val)
 	if err != nil {
@@ -574,8 +570,14 @@ var (
 	}
 	metadata.HeaderMD = header
 	return stream, metadata, nil
-{{else if call $EncodeOutputField $MethodName | ne ""}} 
+{{else if call $EncodeOutputField $MethodName | ne ""}}
+	toInterface := func(obj interface{}) interface{} {
+		return obj
+	}
 	msg, err := client.{{.Method.GetName}}(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	if err != nil {
+		return nil, metadata, err
+	}
 	castedMsg, ok := toInterface(msg).(*{{call $EncodeOutputField $MethodName}})
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", "hi")
@@ -583,7 +585,7 @@ var (
 	{{range $param := call $FieldsToEncode .Method.GetName}}
 		castedMsg.{{call $JsonNameToGoName $param}} = ""
 	{{end}}
-	return castedMsg.(proto.Message), metadata, err
+	return toInterface(castedMsg).(proto.Message), metadata, err
 {{else}}
 	msg, err := client.{{.Method.GetName}}(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
