@@ -205,7 +205,6 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	messageToDecodeType := make(map[string]map[string]string)
 	serviceFieldToDecodeType := make(map[string]map[string]string)
 	encodeOutputToMessageType := make(map[string]string)
-	nameToGoName := make(map[string]string)
 	var decodeTypeId int32 = 50004
 
 	decodeInputField := func(functionName string, fieldName string) bool {
@@ -233,7 +232,6 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					messageToDecodeType[m.GoType(*p.Package)] = make(map[string]string)
 				}
 				messageToDecodeType[m.GoType(*p.Package)][*ff.Name] = value
-				nameToGoName[*ff.Name] = *ff.TypeName
 			}
 		}
 	}
