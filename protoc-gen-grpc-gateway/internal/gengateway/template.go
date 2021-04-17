@@ -331,6 +331,17 @@ var _ = metadata.Join
 var _ = github_com_prysmaticlabs_eth2_types.Epoch(0)
 var _ = emptypb.Empty{}
 var _ = empty.Empty{}
+
+//func Base64ToHex([]byte) ([]byte, error) {
+//  s := base64.StdEncoding.EncodeToString(*h)
+//  hexString := hex.EncodeToString([]byte(s))
+//
+//  // Add quotation marks and '0x' to represent hex value in JSON ("0x...")
+//  b := []byte("\"0x"+hexString+"\"")
+//
+//  return b, nil
+//}
+
 `))
 
 	handlerTemplate = template.Must(template.New("handler").Parse(`
@@ -470,8 +481,19 @@ var (
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", {{$param | printf "%q"}}, err)
 	}
 {{else if call $DecodeFromHex $MethodName $fieldName}}
+	// Strip off quotation marks and '0x' from hex value in JSON ("0x...")
+	s := val[2:]
+	
+	hexBytes, err := hex.DecodeString(s)
+	if err != nil {
+		return nil, err
+	}
+	b64, err := base64.StdEncoding.DecodeString(string(hexBytes))
+	if err != nil {
+		return nil, err
+	}
 	// This is a comment to show tis is working.
-	{{$param}}, err := {{$param.ConvertFuncExpr}}(val{{if $param.IsRepeated}}, {{$binding.Registry.GetRepeatedPathParamSeparator | printf "%c" | printf "%q"}}{{end}})
+	{{$param}}, err := {{$param.ConvertFuncExpr}}(b64{{if $param.IsRepeated}}, {{$binding.Registry.GetRepeatedPathParamSeparator | printf "%c" | printf "%q"}}{{end}})
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", {{$param | printf "%q"}}, err)
 	}
