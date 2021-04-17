@@ -555,8 +555,17 @@ var (
 	return stream, metadata, nil
 {{else if call $EncodeOutputField $MethodName | ne ""}} 
 	msg, err := client.{{.Method.GetName}}(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	// Working
-	return msg, metadata, err
+		castedMsg, ok := msg.(*{{call $EncodeOutputField $MethodName}})
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", "hi")
+	}
+	{{range $param := .PathParams}}
+		{{$fieldName := $param | printf "%v"}}
+		{{if call $DecodeFromHex $MethodName $fieldName}}
+			castedMsg.{{$fieldName}} = ""
+		{{end}}
+	{{end}}
+	return castedMsg.(proto.Message), metadata, err
 {{else}}
 	msg, err := client.{{.Method.GetName}}(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
