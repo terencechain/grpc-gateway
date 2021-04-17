@@ -264,9 +264,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			}
 			for k, v := range messageToDecodeType[serviceInputType] {
 				serviceFieldToDecodeType[requestKey][k] = v
-				if v == "hex" {
-					fieldsToEncode[requestKey] = append(fieldsToEncode[requestKey], k)
-				}
+				fieldsToEncode[requestKey] = append(fieldsToEncode[requestKey], k)
 			}
 		}
 	}
