@@ -30,6 +30,8 @@ type binding struct {
 	AllowPatchFeature bool
 	TypeFromName func(string) string
 	DecodeFromHex func(string, string) bool
+	JsonNameToGoName func(string) string
+	FieldsToEncode func(string) []string
 	EncodeOutputField func(string) string
 }
 
@@ -205,6 +207,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	messageToDecodeType := make(map[string]map[string]string)
 	serviceFieldToDecodeType := make(map[string]map[string]string)
 	encodeOutputToMessageType := make(map[string]string)
+	jsonFieldNameToGoName := make(map[string]string)
+	fieldsToEncode := make(map[string][]string)
 	var decodeTypeId int32 = 50004
 
 	decodeInputField := func(functionName string, fieldName string) bool {
@@ -213,6 +217,12 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	encodeOutputMessageType := func(functionName string) string {
 		return encodeOutputToMessageType[functionName]
 	}
+	jsonFieldNameGoName := func(fieldName string) string {
+		return jsonFieldNameToGoName[fieldName]
+	}
+	funcFieldsEncode := func(functionName string) []string {
+		return fieldsToEncode[functionName]
+	}
 
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
@@ -220,7 +230,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		for _, ff := range m.Fields {
 			log.Printf("\tField name: %v\n", *ff.Name)
 			log.Printf("\tField name: %v\n", *ff.JsonName)
-
+			jsonFieldNameToGoName[*ff.Name] = *ff.JsonName
 
 			value, err := getExtensionValueById(ff, decodeTypeId)
 			if err != nil {
@@ -254,6 +264,9 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			}
 			for k, v := range messageToDecodeType[serviceInputType] {
 				serviceFieldToDecodeType[requestKey][k] = v
+				if v == "hex" {
+					fieldsToEncode[requestKey] = append(fieldsToEncode[requestKey], k)
+				}
 			}
 		}
 	}
@@ -277,6 +290,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					TypeFromName: typeFromName,
 					DecodeFromHex: decodeInputField,
 					EncodeOutputField: encodeOutputMessageType,
+					JsonNameToGoName: jsonFieldNameGoName,
+					FieldsToEncode: funcFieldsEncode,
 				}); err != nil {
 					return "", err
 				}
@@ -437,6 +452,8 @@ func request_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}}(ctx cont
 {{$TypeFromName := .TypeFromName}}
 {{$DecodeFromHex := .DecodeFromHex}}
 {{$EncodeOutputField := .EncodeOutputField}}
+{{$JsonNameToGoName := .JsonNameToGoName}}
+{{$FieldsToEncode := .FieldsToEncode}}
 {{$MethodName := (printf "%s_%s" .Method.Service.GetName .Method.GetName)}}
 {{if .HasQueryParam}}
 var (
@@ -563,11 +580,8 @@ var (
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", "hi")
 	}
-	{{range $param := .PathParams}}
-		{{$fieldName := $param | printf "%v"}}
-		{{if call $DecodeFromHex $MethodName $fieldName}}
-			castedMsg.{{$fieldName}} = ""
-		{{end}}
+	{{range $param := call $FieldsToEncode .Method.GetName}}
+		castedMsg.{{call $JsonNameToGoName $param}} = ""
 	{{end}}
 	return castedMsg.(proto.Message), metadata, err
 {{else}}
