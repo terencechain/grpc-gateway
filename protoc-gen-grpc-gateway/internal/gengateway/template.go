@@ -245,8 +245,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			log.Printf("\tService InputType: %v\n", serviceInputType)
 			log.Printf("\tService OutputType: %v\n", serviceOutputType)
 
-			outputTypeIndex := strings.LastIndex(*mm.InputType, ".")
-			outputType := (*mm.InputType)[outputTypeIndex+1:]
+			outputTypeIndex := strings.LastIndex(*mm.OutputType, ".")
+			outputType := (*mm.OutputType)[outputTypeIndex+1:]
 			encodeOutputToMessageType[requestKey] = outputType
 
 			if len(serviceFieldToDecodeType[requestKey]) == 0 {
@@ -360,6 +360,10 @@ var _ = hex.ErrLength
 //
 //  return b, nil
 //}
+
+func toInterface(obj interface{}) interface{} {
+	return obj
+}
 
 `))
 
@@ -555,7 +559,7 @@ var (
 	return stream, metadata, nil
 {{else if call $EncodeOutputField $MethodName | ne ""}} 
 	msg, err := client.{{.Method.GetName}}(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-		castedMsg, ok := msg.(*{{call $EncodeOutputField $MethodName}})
+	castedMsg, ok := toInterface(msg).(*{{call $EncodeOutputField $MethodName}})
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", "hi")
 	}
