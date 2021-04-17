@@ -490,11 +490,11 @@ var (
 	
 	hexBytes, err := hex.DecodeString(s)
 	if err != nil {
-		return nil, err
+		return nil, metadata, err
 	}
 	b64, err := base64.StdEncoding.DecodeString(string(hexBytes))
 	if err != nil {
-		return nil, err
+		return nil, metadata, err
 	}
 	{{$param.AssignableExpr "protoReq"}} = {{$param | printf "%q" | call $TypeFromName}}(b64)
 {{else}}
