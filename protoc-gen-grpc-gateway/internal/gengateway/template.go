@@ -33,6 +33,7 @@ type binding struct {
 	JsonNameToGoName func(string) string
 	FieldsToEncode func(string) []string
 	EncodeOutputField func(string) string
+	EncodingFieldPaths func(string) []string
 }
 
 // GetBodyFieldPath returns the binding body's fieldpath.
@@ -191,6 +192,47 @@ func getPkgNameFromTypeString(typeString string) string {
 	return typeString[secondLastIdx+1:]
 }
 
+func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string) (fields []string, jsonFields []string) {
+	var decodeTypeId int32 = 50004
+	log.Println("fuck me now")
+
+	if msg == nil || len(msg.Fields) == 0 {
+		fmt.Println("empty")
+		return fields, jsonFields
+	}
+	log.Println("fuck me nowww")
+
+	for _, ff := range msg.Fields {
+		value, err := getExtensionValueById(ff, decodeTypeId)
+		if err != nil {
+			panic(err)
+		}
+		if value == "hex" {
+			fields = append(fields, fmt.Sprintf("%s.%s", prefix, *ff.Name))
+			jsonFields = append(jsonFields, fmt.Sprintf("%s.%s", prefix, *ff.JsonName))
+		}
+		//nestedFields, nestedJsonFields := fieldsToTranscodeFunc(ff.Message, fmt.Sprintf("%s.%s", prefix, *ff.JsonName))
+		//fields = append(fields, nestedFields...)
+		//jsonFields = append(jsonFields, nestedJsonFields...)
+	}
+	return fields, jsonFields
+}
+func messageFunc(msg *descriptor.Message, prefix string) []string {
+	// TODO: somehow find out array lengths at runtime?
+	log.Println("fuck me")
+	_, jsonFieldPaths := fieldsToTranscodeFunc(msg, *msg.Name)
+	return jsonFieldPaths
+}
+//
+//func getFullConversionForMessage(file param) func(messageName string) []string {
+//	return func(messageName string) []string {
+//		innerFile := file
+//		for _, mm := range innerFile.Messages {
+//		}
+//		return []string{}
+//	}
+//}
+
 func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	w := bytes.NewBuffer(nil)
 	if err := headerTemplate.Execute(w, p); err != nil {
@@ -203,12 +245,12 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		msg.Name = &msgName
 	}
 
-
 	messageToDecodeType := make(map[string]map[string]string)
 	serviceFieldToDecodeType := make(map[string]map[string]string)
 	encodeOutputToMessageType := make(map[string]string)
 	jsonFieldNameToGoName := make(map[string]string)
 	fieldsToEncode := make(map[string][]string)
+	fieldPaths := make(map[string][]string)
 	var decodeTypeId int32 = 50004
 
 	decodeInputField := func(functionName string, fieldName string) bool {
@@ -224,8 +266,14 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 		return fieldsToEncode[functionName]
 	}
 
+	fieldPathsFunc := func(messageName string) []string {
+		return fieldPaths[messageName]
+	}
+
 	for _, m := range p.Messages {
 		log.Printf("Message name: %v\n", *m.Name)
+
+		fieldPaths[*m.Name] = messageFunc(m, *m.Name)
 
 		for _, ff := range m.Fields {
 			log.Printf("\tField name: %v\n", *ff.Name)
@@ -292,6 +340,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					EncodeOutputField: encodeOutputMessageType,
 					JsonNameToGoName: jsonFieldNameGoName,
 					FieldsToEncode: funcFieldsEncode,
+					EncodingFieldPaths: fieldPathsFunc,
 				}); err != nil {
 					return "", err
 				}
@@ -306,6 +355,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					EncodeOutputField: encodeOutputMessageType,
 					JsonNameToGoName: jsonFieldNameGoName,
 					FieldsToEncode: funcFieldsEncode,
+					EncodingFieldPaths: fieldPathsFunc,
 				}); err != nil {
 					return "", err
 				}
@@ -451,6 +501,7 @@ func request_{{.Method.Service.GetName}}_{{.Method.GetName}}_{{.Index}}(ctx cont
 {{$EncodeOutputField := .EncodeOutputField}}
 {{$JsonNameToGoName := .JsonNameToGoName}}
 {{$FieldsToEncode := .FieldsToEncode}}
+{{$EncodingFieldPaths := .EncodingFieldPaths}}
 {{$MethodName := (printf "%s_%s" .Method.Service.GetName .Method.GetName)}}
 {{if .HasQueryParam}}
 var (
@@ -584,6 +635,7 @@ var (
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", "hi")
 	}
+	// {{call $EncodeOutputField $MethodName | call $EncodingFieldPaths}} 
 	{{range $param := call $FieldsToEncode $MethodName}}
 		castedMsg.{{call $JsonNameToGoName $param}} = ""
 	{{end}}
