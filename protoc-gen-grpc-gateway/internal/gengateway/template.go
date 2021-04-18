@@ -209,6 +209,7 @@ func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string, depth uint64)
 			fields = append(fields, fmt.Sprintf("%s.%s", prefix, *ff.Name))
 			jsonFields = append(jsonFields, fmt.Sprintf("%s.%s", prefix, *ff.JsonName))
 		}
+		log.Println(ff.FieldMessage)
 		nestedFields, nestedJsonFields := fieldsToTranscodeFunc(ff.FieldMessage, fmt.Sprintf("%s.%s", prefix, *ff.JsonName), depth+1)
 		fields = append(fields, nestedFields...)
 		jsonFields = append(jsonFields, nestedJsonFields...)
