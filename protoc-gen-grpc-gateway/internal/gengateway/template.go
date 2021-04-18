@@ -206,9 +206,9 @@ func fieldsToTranscodeFunc(msg protoreflect.MessageDescriptor, prefix string, de
 	log.Printf("Checking message at depth %d: %s\n", depth, msg.Name())
 	for i := 0; i < fieldProtos.Len(); i++ {
 		ff := fieldProtos.Get(i)
-		log.Printf("Checking field name at depth %d: %s\n", depth, ff.Name())
-		log.Printf("Checking full name at depth %d: %s\n", depth, ff.FullName())
-		log.Printf("Checking json name at depth %d: %s\n", depth, ff.JSONName())
+		//log.Printf("Checking field name at depth %d: %s\n", depth, ff.Name())
+		//log.Printf("Checking full name at depth %d: %s\n", depth, ff.FullName())
+		//log.Printf("Checking json name at depth %d: %s\n", depth, ff.JSONName())
 		if ff.Message() != nil {
 			log.Printf("Checking field message name at depth %d: %s\n", depth, ff.Message().Name())
 			log.Printf("Checking field message reserved name at depth %d: %s\n", depth, ff.Message().ReservedNames())
@@ -320,7 +320,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 				return "", err
 			}
 			if value != "" {
-				log.Printf("\tField Decode_Type Value: %s\n", value)
+				//log.Printf("\tField Decode_Type Value: %s\n", value)
 				if len(messageToDecodeType[m.GoType(*p.Package)]) == 0 {
 					messageToDecodeType[m.GoType(*p.Package)] = make(map[string]string)
 				}
@@ -331,12 +331,12 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	for _, ss := range p.Service {
 		for _, mm := range ss.Method {
 			requestKey := fmt.Sprintf("%s_%s", *ss.Name, *mm.Name)
-			log.Printf("Service Method Name: %v\n", requestKey)
+			//log.Printf("Service Method Name: %v\n", requestKey)
 
 			serviceInputType := getPkgNameFromTypeString(*mm.InputType)
 			serviceOutputType := getPkgNameFromTypeString(*mm.OutputType)
-			log.Printf("\tService InputType: %v\n", serviceInputType)
-			log.Printf("\tService OutputType: %v\n", serviceOutputType)
+			//log.Printf("\tService InputType: %v\n", serviceInputType)
+			//log.Printf("\tService OutputType: %v\n", serviceOutputType)
 
 			outputTypeIndex := strings.LastIndex(*mm.OutputType, ".")
 			outputType := (*mm.OutputType)[outputTypeIndex+1:]
