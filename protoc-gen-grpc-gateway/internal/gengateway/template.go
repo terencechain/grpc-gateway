@@ -199,8 +199,9 @@ func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string, depth uint64)
 		return fields, jsonFields
 	}
 
-	log.Printf("Checking field at depth %d: %s\n", depth, *msg.Name)
+	log.Printf("Checking message at depth %d: %s\n", depth, *msg.Name)
 	for _, ff := range msg.Fields {
+		log.Printf("Checking field at depth %d: %s\n", depth, *ff.Name)
 		value, err := getExtensionValueById(ff, decodeTypeId)
 		if err != nil {
 			panic(err)
