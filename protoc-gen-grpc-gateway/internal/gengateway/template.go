@@ -199,7 +199,7 @@ func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string, depth uint64)
 		return fields, jsonFields
 	}
 
-	log.Printf("Checking field: %s\n", *msg.Name)
+	log.Printf("Checking field at depth %d: %s\n", depth, *msg.Name)
 	for _, ff := range msg.Fields {
 		value, err := getExtensionValueById(ff, decodeTypeId)
 		if err != nil {
@@ -217,7 +217,6 @@ func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string, depth uint64)
 }
 func messageFunc(msg *descriptor.Message, prefix string) []string {
 	// TODO: somehow find out array lengths at runtime?
-	log.Println("fuck me")
 	_, jsonFieldPaths := fieldsToTranscodeFunc(msg, *msg.Name, 0)
 	return jsonFieldPaths
 }
