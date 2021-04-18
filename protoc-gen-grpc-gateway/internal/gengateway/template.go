@@ -212,6 +212,11 @@ func fieldsToTranscodeFunc(msg protoreflect.MessageDescriptor, prefix string, de
 		log.Printf("Checking field name at depth %d: %s\n", depth, ff.Name())
 		log.Printf("Checking full name at depth %d: %s\n", depth, ff.FullName())
 		log.Printf("Checking json name at depth %d: %s\n", depth, ff.JSONName())
+		if ff.Message() != nil {
+			log.Printf("Checking field message name at depth %d: %s\n", depth, ff.Message().Name())
+			log.Printf("Checking field message reserved name at depth %d: %s\n", depth, ff.Message().ReservedNames())
+			log.Printf("Checking field message full name at depth %d: %s\n", depth, ff.Message().FullName())
+		}
 		options, ok := ff.Options().(*descriptorpb.FieldOptions)
 		if !ok {
 			log.Println("Skipping options cast")
