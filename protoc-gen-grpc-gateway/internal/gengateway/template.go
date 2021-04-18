@@ -253,6 +253,7 @@ func fieldsToTranscodeFunc(msg protoreflect.MessageDescriptor, prefix string, de
 }
 func messageFunc(msg *descriptor.Message, prefix string) []string {
 	// TODO: somehow find out array lengths at runtime?
+	log.Printf("Checking %s\n", *msg.Name)
 	_, jsonFieldPaths := fieldsToTranscodeFunc(msg.ProtoReflect().Descriptor(), *msg.Name, 0)
 	return jsonFieldPaths
 }
