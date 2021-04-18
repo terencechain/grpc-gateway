@@ -194,13 +194,12 @@ func getPkgNameFromTypeString(typeString string) string {
 
 func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string, depth uint64) (fields []string, jsonFields []string) {
 	var decodeTypeId int32 = 50004
-	log.Println("fuck me now")
 
 	if depth > 2 || msg == nil || len(msg.Fields) == 0 {
 		return fields, jsonFields
 	}
-	log.Println("fuck me nowww")
 
+	log.Printf("Checking field: %s\n", *msg.Name)
 	for _, ff := range msg.Fields {
 		value, err := getExtensionValueById(ff, decodeTypeId)
 		if err != nil {
@@ -264,19 +263,18 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	funcFieldsEncode := func(functionName string) []string {
 		return fieldsToEncode[functionName]
 	}
-
 	fieldPathsFunc := func(messageName string) []string {
 		return fieldPaths[messageName]
 	}
 
 	for _, m := range p.Messages {
-		log.Printf("Message name: %v\n", *m.Name)
+		//log.Printf("Message name: %v\n", *m.Name)
 
 		fieldPaths[*m.Name] = messageFunc(m, *m.Name)
 
 		for _, ff := range m.Fields {
-			log.Printf("\tField name: %v\n", *ff.Name)
-			log.Printf("\tField name: %v\n", *ff.JsonName)
+			//log.Printf("\tField name: %v\n", *ff.Name)
+			//log.Printf("\tField name: %v\n", *ff.JsonName)
 			jsonFieldNameToGoName[*ff.Name] = *ff.JsonName
 
 			value, err := getExtensionValueById(ff, decodeTypeId)
