@@ -206,9 +206,6 @@ func fieldsToTranscodeFunc(msg protoreflect.MessageDescriptor, prefix string, de
 	log.Printf("Checking message at depth %d: %s\n", depth, msg.Name())
 	for i := 0; i < fieldProtos.Len(); i++ {
 		ff := fieldProtos.Get(i)
-		if !ff.IsList() {
-			continue
-		}
 		log.Printf("Checking field name at depth %d: %s\n", depth, ff.Name())
 		log.Printf("Checking full name at depth %d: %s\n", depth, ff.FullName())
 		log.Printf("Checking json name at depth %d: %s\n", depth, ff.JSONName())
