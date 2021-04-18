@@ -192,12 +192,11 @@ func getPkgNameFromTypeString(typeString string) string {
 	return typeString[secondLastIdx+1:]
 }
 
-func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string) (fields []string, jsonFields []string) {
+func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string, depth uint64) (fields []string, jsonFields []string) {
 	var decodeTypeId int32 = 50004
 	log.Println("fuck me now")
 
-	if msg == nil || len(msg.Fields) == 0 {
-		fmt.Println("empty")
+	if depth > 2 || msg == nil || len(msg.Fields) == 0 {
 		return fields, jsonFields
 	}
 	log.Println("fuck me nowww")
@@ -211,16 +210,16 @@ func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string) (fields []str
 			fields = append(fields, fmt.Sprintf("%s.%s", prefix, *ff.Name))
 			jsonFields = append(jsonFields, fmt.Sprintf("%s.%s", prefix, *ff.JsonName))
 		}
-		//nestedFields, nestedJsonFields := fieldsToTranscodeFunc(ff.Message, fmt.Sprintf("%s.%s", prefix, *ff.JsonName))
-		//fields = append(fields, nestedFields...)
-		//jsonFields = append(jsonFields, nestedJsonFields...)
+		nestedFields, nestedJsonFields := fieldsToTranscodeFunc(ff.Message, fmt.Sprintf("%s.%s", prefix, *ff.JsonName), depth+1)
+		fields = append(fields, nestedFields...)
+		jsonFields = append(jsonFields, nestedJsonFields...)
 	}
 	return fields, jsonFields
 }
 func messageFunc(msg *descriptor.Message, prefix string) []string {
 	// TODO: somehow find out array lengths at runtime?
 	log.Println("fuck me")
-	_, jsonFieldPaths := fieldsToTranscodeFunc(msg, *msg.Name)
+	_, jsonFieldPaths := fieldsToTranscodeFunc(msg, *msg.Name, 0)
 	return jsonFieldPaths
 }
 //
