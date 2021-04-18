@@ -17,6 +17,8 @@ go_library(
         "//utilities:go_default_library",
         "@com_github_golang_glog//:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
         "@org_golang_google_protobuf//types/pluginpb:go_default_library",
     ],
 )

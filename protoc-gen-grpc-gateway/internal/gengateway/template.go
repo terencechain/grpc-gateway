@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"log"
 	"regexp"
 	"strings"
@@ -170,8 +172,7 @@ func typeFromName(name string) string {
 	return ""
 }
 
-func getExtensionValueById(f *descriptor.Field, extensionId int32) (string, error) {
-	options := f.Options
+func getExtensionValueById(options *descriptorpb.FieldOptions, extensionId int32) (string, error) {
 	regex, err := regexp.Compile(fmt.Sprintf("%d:\"([^\"]*)\"", extensionId))
 	if err != nil {
 		return "", err
@@ -192,34 +193,65 @@ func getPkgNameFromTypeString(typeString string) string {
 	return typeString[secondLastIdx+1:]
 }
 
-func fieldsToTranscodeFunc(msg *descriptor.Message, prefix string, depth uint64) (fields []string, jsonFields []string) {
+// TODO: Make global message fields list (maybe build this using reflecT?)
+func fieldsToTranscodeFunc(msg protoreflect.MessageDescriptor, prefix string, depth uint64) (fields []string, jsonFields []string) {
 	var decodeTypeId int32 = 50004
 
-	if depth > 2 || msg == nil || len(msg.Fields) == 0 {
+	if depth > 2 || msg == nil {
 		return fields, jsonFields
 	}
 
-	log.Printf("Checking message at depth %d: %s\n", depth, *msg.Name)
-	for _, ff := range msg.Fields {
-		log.Printf("Checking field at depth %d: %s\n", depth, *ff.Name)
-		value, err := getExtensionValueById(ff, decodeTypeId)
+	fieldProtos := msg.Fields()
+
+	log.Printf("Checking message at depth %d: %s\n", depth, msg.Name())
+	for i := 0; i < fieldProtos.Len(); i++ {
+		ff := fieldProtos.Get(i)
+		if !ff.IsList() {
+			continue
+		}
+		log.Printf("Checking field name at depth %d: %s\n", depth, ff.Name())
+		log.Printf("Checking full name at depth %d: %s\n", depth, ff.FullName())
+		log.Printf("Checking json name at depth %d: %s\n", depth, ff.JSONName())
+		options, ok := ff.Options().(*descriptorpb.FieldOptions)
+		if !ok {
+			log.Println("Skipping options cast")
+			continue
+		}
+		value, err := getExtensionValueById(options, decodeTypeId)
 		if err != nil {
 			panic(err)
 		}
 		if value == "hex" {
-			fields = append(fields, fmt.Sprintf("%s.%s", prefix, *ff.Name))
-			jsonFields = append(jsonFields, fmt.Sprintf("%s.%s", prefix, *ff.JsonName))
+			fields = append(fields, fmt.Sprintf("%s.%s", prefix, string(ff.Name())))
+			jsonFields = append(jsonFields, fmt.Sprintf("%s.%s", prefix, string(ff.FullName())))
 		}
-		log.Println(ff.FieldMessage)
-		nestedFields, nestedJsonFields := fieldsToTranscodeFunc(ff.FieldMessage, fmt.Sprintf("%s.%s", prefix, *ff.JsonName), depth+1)
+		nestedFields, nestedJsonFields := fieldsToTranscodeFunc(ff.Message(), fmt.Sprintf("%s.%s", prefix, ff.JSONName()), depth+1)
 		fields = append(fields, nestedFields...)
 		jsonFields = append(jsonFields, nestedJsonFields...)
 	}
+
+
+	//log.Printf("Checking message at depth %d: %s\n", depth, *msg.Name)
+	//for _, ff := range msg.Fields {
+	//	log.Printf("Checking field at depth %d: %s\n", depth, *ff.Name)
+	//	value, err := getExtensionValueById(ff, decodeTypeId)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	if value == "hex" {
+	//		fields = append(fields, fmt.Sprintf("%s.%s", prefix, *ff.Name))
+	//		jsonFields = append(jsonFields, fmt.Sprintf("%s.%s", prefix, *ff.JsonName))
+	//	}
+	//	log.Println(ff.FieldMessage)
+	//	nestedFields, nestedJsonFields := fieldsToTranscodeFunc(ff.FieldMessage, fmt.Sprintf("%s.%s", prefix, *ff.JsonName), depth+1)
+	//	fields = append(fields, nestedFields...)
+	//	jsonFields = append(jsonFields, nestedJsonFields...)
+	//}
 	return fields, jsonFields
 }
 func messageFunc(msg *descriptor.Message, prefix string) []string {
 	// TODO: somehow find out array lengths at runtime?
-	_, jsonFieldPaths := fieldsToTranscodeFunc(msg, *msg.Name, 0)
+	_, jsonFieldPaths := fieldsToTranscodeFunc(msg.ProtoReflect().Descriptor(), *msg.Name, 0)
 	return jsonFieldPaths
 }
 //
@@ -252,6 +284,8 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 	fieldPaths := make(map[string][]string)
 	var decodeTypeId int32 = 50004
 
+
+
 	decodeInputField := func(functionName string, fieldName string) bool {
 		return serviceFieldToDecodeType[functionName][fieldName] == "hex"
 	}
@@ -278,7 +312,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 			//log.Printf("\tField name: %v\n", *ff.JsonName)
 			jsonFieldNameToGoName[*ff.Name] = *ff.JsonName
 
-			value, err := getExtensionValueById(ff, decodeTypeId)
+			value, err := getExtensionValueById(ff.Options, decodeTypeId)
 			if err != nil {
 				return "", err
 			}
