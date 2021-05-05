@@ -76,6 +76,39 @@ func (b binding) QueryParamFilter() queryParamFilter {
 	return queryParamFilter{utilities.NewDoubleArray(seqs)}
 }
 
+
+// HasQueryParam determines if the binding needs parameters in query string.
+//
+// It sometimes returns true even though actually the binding does not need.
+// But it is not serious because it just results in a small amount of extra codes generated.
+func (b binding) HasQueryParam() bool {
+	if b.Body != nil && len(b.Body.FieldPath) == 0 {
+		return false
+	}
+	fields := make(map[string]bool)
+	for _, f := range b.Method.RequestType.Fields {
+		fields[f.GetName()] = true
+	}
+	if b.Body != nil {
+		delete(fields, b.Body.FieldPath.String())
+	}
+	for _, p := range b.PathParams {
+		delete(fields, p.FieldPath.String())
+	}
+	return len(fields) > 0
+}
+
+func (b binding) QueryParamFilter() queryParamFilter {
+	var seqs [][]string
+	if b.Body != nil {
+		seqs = append(seqs, strings.Split(b.Body.FieldPath.String(), "."))
+	}
+	for _, p := range b.PathParams {
+		seqs = append(seqs, strings.Split(p.FieldPath.String(), "."))
+	}
+	return queryParamFilter{utilities.NewDoubleArray(seqs)}
+}
+
 // HasEnumPathParam returns true if the path parameter slice contains a parameter
 // that maps to an enum proto field that is not repeated, if not false is returned.
 func (b binding) HasEnumPathParam() bool {

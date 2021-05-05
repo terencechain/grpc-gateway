@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
 	"strconv"
 	"strings"
 	"time"
@@ -21,24 +22,30 @@ var currentPathParser PathParameterParser = &defaultPathParser{}
 
 // PathParameterParser defines interface for all path parameter parsers
 type PathParameterParser interface {
-	Parse(msg proto.Message, pathParams map[string]string) error
+	Parse(msg proto.Message, pathParams map[string]string, filter *utilities.DoubleArray) error
 }
 
 // PopulatePathParameters parses path parameters
 // into "msg" using current path parser
-func PopulatePathParameters(msg proto.Message, pathParams map[string]string) error {
-	return currentPathParser.Parse(msg, pathParams)
+func PopulatePathParameters(msg proto.Message, pathParams map[string]string, filter *utilities.DoubleArray) error {
+	return currentPathParser.Parse(msg, pathParams, filter)
 }
 
 type defaultPathParser struct{}
 
 // Parse populates "values" into "msg".
-// This is mainly similar to the query parser except support for maps and proto messages
-// is removed. Repeated fields (comma separated) are supported, but any unsupported field types
-// will just be skipped to let the query parser handle.
-func (*defaultPathParser) Parse(msg proto.Message, values map[string]string) error {
+// This is mainly similar to the query parser except support for maps.
+func (*defaultPathParser) Parse(msg proto.Message, values map[string]string, filter *utilities.DoubleArray) error {
 	for key, value := range values {
+		match := valuesKeyRegexp.FindStringSubmatch(key)
+		if len(match) == 3 {
+			key = match[1]
+			value = match[2] + value
+		}
 		fieldPath := strings.Split(key, ".")
+		if filter.HasCommonPrefix(fieldPath) {
+			continue
+		}
 		if err := populateFieldValueFromPath(msg.ProtoReflect(), fieldPath, value); err != nil {
 			return err
 		}
