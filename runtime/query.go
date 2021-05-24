@@ -236,7 +236,10 @@ func parseField(fieldDescriptor protoreflect.FieldDescriptor, value string) (pro
 	case protoreflect.BytesKind:
 		v, err := base64.URLEncoding.DecodeString(value)
 		if err != nil {
-			return protoreflect.Value{}, err
+			v, err = base64.StdEncoding.DecodeString(value)
+			if err != nil {
+				return protoreflect.Value{}, err
+			}
 		}
 		return protoreflect.ValueOfBytes(v), nil
 	case protoreflect.MessageKind, protoreflect.GroupKind:
