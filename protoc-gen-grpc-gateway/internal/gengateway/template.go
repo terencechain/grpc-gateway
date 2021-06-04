@@ -26,7 +26,7 @@ type binding struct {
 	*descriptor.Binding
 	Registry          *descriptor.Registry
 	AllowPatchFeature bool
-	TypeFromName      func(string) string
+	TypeFromName func(string) string
 }
 
 // GetBodyFieldPath returns the binding body's fieldpath.
@@ -190,7 +190,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					Binding:           b,
 					Registry:          reg,
 					AllowPatchFeature: p.AllowPatchFeature,
-					TypeFromName:      typeFromName,
+					TypeFromName: typeFromName,
 				}); err != nil {
 					return "", err
 				}
@@ -200,7 +200,7 @@ func applyTemplate(p param, reg *descriptor.Registry) (string, error) {
 					Binding:           b,
 					Registry:          reg,
 					AllowPatchFeature: p.AllowPatchFeature,
-					TypeFromName:      typeFromName,
+					TypeFromName: typeFromName,
 				}); err != nil {
 					return "", err
 				}
