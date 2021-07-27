@@ -9,7 +9,9 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.5
+	github.com/prometheus/common v0.4.0
 	github.com/rogpeppe/fastuuid v1.2.0
+	github.com/sirupsen/logrus v1.2.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c
 	google.golang.org/genproto v0.0.0-20210426193834-eac7f76ac494
 	google.golang.org/grpc v1.37.0

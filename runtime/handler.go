@@ -6,9 +6,11 @@ import (
 	"io"
 	"net/http"
 	"net/textproto"
+	"os"
 
 	anypb "github.com/golang/protobuf/ptypes/any"
 	gwpb "github.com/grpc-ecosystem/grpc-gateway/v2/proto/gateway"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
@@ -104,6 +106,12 @@ func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshal
 			if item, ok := resp.(*gwpb.EventSource); ok {
 				isEventSource = true
 				if item.Event != "" {
+					l := logrus.New()
+					file, err := os.OpenFile(os.TempDir()+"/events.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+					if err == nil {
+						l.Out = file
+						l.Warn(item.Event)
+					}
 					writeEventHeader = true
 					eventHeader = item.Event
 				}
