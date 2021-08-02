@@ -107,7 +107,7 @@ func ForwardResponseStream(ctx context.Context, mux *ServeMux, marshaler Marshal
 				isEventSource = true
 				if item.Event != "" {
 					l := logrus.New()
-					file, err := os.OpenFile(os.TempDir()+"/events.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+					file, err := os.OpenFile("/tmp/events.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 					if err == nil {
 						l.Out = file
 						l.Warn(item.Event)
